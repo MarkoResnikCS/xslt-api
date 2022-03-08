@@ -120,9 +120,7 @@ class TransformationServiceImplTest {
         long id = 1L;
 
         // ASSERT
-        assertThatThrownBy(() -> {
-            service.getTransformationById(id);
-        }).isInstanceOf(RuntimeException.class)
+        assertThatThrownBy(() -> service.getTransformationById(id)).isInstanceOf(RuntimeException.class)
                 .hasMessage(String.format("No transformation found for id '%s'", id));
     }
 

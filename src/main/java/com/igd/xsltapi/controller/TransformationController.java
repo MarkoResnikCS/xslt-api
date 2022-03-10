@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -33,6 +34,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/transformations")
@@ -54,7 +56,11 @@ public class TransformationController {
     public UploadFileResponse transform(@RequestParam("file") MultipartFile file) throws IOException {
         Processor proc = new Processor(false);
         InputStream xsl = new ByteArrayInputStream(getXsl().getBytes(StandardCharsets.UTF_8));
-//            String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+        if (!fileExtension.equalsIgnoreCase("XML")) {
+            throw new IllegalArgumentException("XML files supported only");
+        }
         String newFileName = "output-" + new Date().getTime() + "." + "html";//fileExtension;
         try {
             XsltTransformer trans = proc.newXsltCompiler().compile(new StreamSource(xsl)).load();
@@ -106,7 +112,7 @@ public class TransformationController {
         }
 
         // Fallback to the default content type if type could not be determined
-        if(contentType == null) {
+        if (contentType == null) {
             contentType = "application/octet-stream";
         }
 

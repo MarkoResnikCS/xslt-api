@@ -9,6 +9,6 @@
 &lt;!DOCTYPE ArticleSet
   PUBLIC "-//NLM//DTD PubMed 2.8//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/in/PubMed.dtd"&gt;
 </xsl:text>
-		<CopyrightInformation><xsl:value-of select="asset/auxiliaryType/text()" /></CopyrightInformation>
+		<CopyrightInformation><xsl:value-of select="asset/auxiliaryType" /></CopyrightInformation>
 	</xsl:template>
 </xsl:stylesheet>

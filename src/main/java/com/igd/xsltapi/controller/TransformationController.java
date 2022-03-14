@@ -13,12 +13,16 @@ import net.sf.saxon.s9api.XsltTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,14 +31,14 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.xml.transform.stream.StreamSource;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @RestController
 @RequestMapping("/api/transformations")
@@ -53,28 +57,25 @@ public class TransformationController {
     }
 
     @PostMapping("/transform")
-    public UploadFileResponse transform(@RequestParam("file") MultipartFile file) throws IOException {
+    public UploadFileResponse transform(@RequestParam("file") MultipartFile file) throws IOException, SaxonApiException {
         Processor proc = new Processor(false);
-        InputStream xsl = new ByteArrayInputStream(getXsl().getBytes(StandardCharsets.UTF_8));
         String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
         if (!fileExtension.equalsIgnoreCase("XML")) {
             throw new IllegalArgumentException("XML files supported only");
         }
-        String newFileName = "output-" + new Date().getTime() + "." + "html";//fileExtension;
+        String newFileName = "output-" + new Date().getTime() + "." + fileExtension;
         try {
+            InputStream xsl = new ByteArrayInputStream(getXsl().getBytes(UTF_8));
             XsltTransformer trans = proc.newXsltCompiler().compile(new StreamSource(xsl)).load();
             trans.setInitialContextNode(proc.newDocumentBuilder().build(new StreamSource(file.getInputStream())));
             Serializer out = proc.newSerializer(new File(fileStorageService.getFileStorageLocation().toString(), newFileName));
-//            out.setOutputProperty(Serializer.Property.METHOD, "html");
-//            out.setOutputProperty(Serializer.Property.INDENT, "yes");
             trans.setDestination(out);
             trans.transform();
         } catch (SaxonApiException e) {
             e.printStackTrace();
+            throw e;
         }
-
-//        String fileName = fileStorageService.storeFile(file);
 
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/transformations/downloadFile/")
@@ -156,31 +157,49 @@ public class TransformationController {
         return new ResponseEntity<>("Transformation successfully deleted", HttpStatus.OK);
     }
 
-    private String getXsl() {
-        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<xsl:stylesheet version=\"2.0\"\n" +
-                "    xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\"\n" +
-                "    xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n" +
-                "    xmlns:fn=\"http://www.w3.org/2005/xpath-functions\">\n" +
-                "    <xsl:output method=\"html\" />\n" +
-                "    <xsl:template match=\"/\">\n" +
-                "        <html>\n" +
-                "            <body>\n" +
-                "                <h2>Vogella Trainings</h2>\n" +
-                "                <xsl:apply-templates />\n" +
-                "            </body>\n" +
-                "        </html>\n" +
-                "    </xsl:template>\n" +
-                "    <xsl:template match=\"online-trainings\">\n" +
-                "        <ul>\n" +
-                "            <xsl:apply-templates />\n" +
-                "        </ul>\n" +
-                "    </xsl:template>\n" +
-                "    <xsl:template match=\"training\">\n" +
-                "        <li>\n" +
-                "            <xsl:value-of select=\"@name\" />\n" +
-                "        </li>\n" +
-                "    </xsl:template>\n" +
-                "</xsl:stylesheet>";
+    private String getXsl() throws IOException {
+        File file = ResourceUtils.getFile("classpath:stylesheet.xsl");
+        InputStream in = new FileInputStream(file);
+        return new BufferedReader(
+                new InputStreamReader(in, StandardCharsets.UTF_8))
+                .lines()
+                .collect(Collectors.joining("\n"));
+//        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+//                "<xsl:stylesheet version=\"2.0\"\n" +
+//                "    xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n" +
+//                "\t<xsl:output method=\"xml\" indent=\"yes\" />\n" +
+//                "    <xsl:template match=\"/\">\n" +
+//                "\t\t<!--<!DOCTYPE ArticleSet\n" +
+//                "\t\t  PUBLIC \"-//NLM//DTD PubMed 2.8//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/in/PubMed.dtd\">-->\n" +
+//                "\t\t<xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE ArticleSet\n" +
+//                "\t\t  PUBLIC \"-//NLM//DTD PubMed 2.8//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/in/PubMed.dtd\"&gt;</xsl:text>\n" +
+//                "\t\t<ArticleSet>\n" +
+//                "\t\t   <Article>\n" +
+//                "\t\t\t  <Journal>\n" +
+//                "\t\t\t\t <PublisherName>American Academy of Neurology</PublisherName>\n" +
+//                "\t\t\t\t <JournalTitle>Neurology</JournalTitle>\n" +
+//                "\t\t\t\t <Issn>0028-3878</Issn>\n" +
+//                "\t\t\t\t <Volume>62</Volume>\n" +
+//                "\t\t\t\t <Issue>8</Issue>\n" +
+//                "\t\t\t\t <PubDate>\n" +
+//                "\t\t\t\t\t<Year>2004</Year>\n" +
+//                "\t\t\t\t\t<Month>April</Month>\n" +
+//                "\t\t\t\t\t<Day>27</Day>\n" +
+//                "\t\t\t\t </PubDate>\n" +
+//                "\t\t\t  </Journal>\n" +
+//                "\t\t\t  <ArticleTitle>April 27 Highlights</ArticleTitle>\n" +
+//                "\t\t\t  <FirstPage>1244</FirstPage>\n" +
+//                "\t\t\t  <LastPage>1245</LastPage>\n" +
+//                "\t\t\t  <Language>ENG</Language>\n" +
+//                "\t\t\t  <ArticleIdList>\n" +
+//                "\t\t\t\t <ArticleId IdType=\"doi\">10.1212/WNL.62.8.1244</ArticleId>\n" +
+//                "\t\t\t\t <ArticleId IdType=\"pii\">00006114-200404270-00004</ArticleId>\n" +
+//                "\t\t\t  </ArticleIdList>\n" +
+//                "\t\t\t  <CopyrightInformation>Copyright © 2004 American Academy of Neurology</CopyrightInformation>\n" +
+//                "\t\t   </Article>\n" +
+//                "\t\t</ArticleSet>\n" +
+//                "    </xsl:template>\n" +
+//                "</xsl:stylesheet>";
     }
+
 }

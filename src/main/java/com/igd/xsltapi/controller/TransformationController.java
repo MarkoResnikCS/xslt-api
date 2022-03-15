@@ -159,47 +159,10 @@ public class TransformationController {
 
     private String getXsl() throws IOException {
         File file = ResourceUtils.getFile("classpath:stylesheet.xsl");
-        InputStream in = new FileInputStream(file);
-        return new BufferedReader(
-                new InputStreamReader(in, StandardCharsets.UTF_8))
-                .lines()
-                .collect(Collectors.joining("\n"));
-//        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-//                "<xsl:stylesheet version=\"2.0\"\n" +
-//                "    xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n" +
-//                "\t<xsl:output method=\"xml\" indent=\"yes\" />\n" +
-//                "    <xsl:template match=\"/\">\n" +
-//                "\t\t<!--<!DOCTYPE ArticleSet\n" +
-//                "\t\t  PUBLIC \"-//NLM//DTD PubMed 2.8//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/in/PubMed.dtd\">-->\n" +
-//                "\t\t<xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE ArticleSet\n" +
-//                "\t\t  PUBLIC \"-//NLM//DTD PubMed 2.8//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/in/PubMed.dtd\"&gt;</xsl:text>\n" +
-//                "\t\t<ArticleSet>\n" +
-//                "\t\t   <Article>\n" +
-//                "\t\t\t  <Journal>\n" +
-//                "\t\t\t\t <PublisherName>American Academy of Neurology</PublisherName>\n" +
-//                "\t\t\t\t <JournalTitle>Neurology</JournalTitle>\n" +
-//                "\t\t\t\t <Issn>0028-3878</Issn>\n" +
-//                "\t\t\t\t <Volume>62</Volume>\n" +
-//                "\t\t\t\t <Issue>8</Issue>\n" +
-//                "\t\t\t\t <PubDate>\n" +
-//                "\t\t\t\t\t<Year>2004</Year>\n" +
-//                "\t\t\t\t\t<Month>April</Month>\n" +
-//                "\t\t\t\t\t<Day>27</Day>\n" +
-//                "\t\t\t\t </PubDate>\n" +
-//                "\t\t\t  </Journal>\n" +
-//                "\t\t\t  <ArticleTitle>April 27 Highlights</ArticleTitle>\n" +
-//                "\t\t\t  <FirstPage>1244</FirstPage>\n" +
-//                "\t\t\t  <LastPage>1245</LastPage>\n" +
-//                "\t\t\t  <Language>ENG</Language>\n" +
-//                "\t\t\t  <ArticleIdList>\n" +
-//                "\t\t\t\t <ArticleId IdType=\"doi\">10.1212/WNL.62.8.1244</ArticleId>\n" +
-//                "\t\t\t\t <ArticleId IdType=\"pii\">00006114-200404270-00004</ArticleId>\n" +
-//                "\t\t\t  </ArticleIdList>\n" +
-//                "\t\t\t  <CopyrightInformation>Copyright © 2004 American Academy of Neurology</CopyrightInformation>\n" +
-//                "\t\t   </Article>\n" +
-//                "\t\t</ArticleSet>\n" +
-//                "    </xsl:template>\n" +
-//                "</xsl:stylesheet>";
+        InputStream inputStream = new FileInputStream(file);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+        BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+        return bufferedReader.lines().collect(Collectors.joining("\n"));
     }
 
 }

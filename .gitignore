@@ -1,4 +1,5 @@
 src/main/resources/application-local.properties
+output-*.xml
 
 HELP.md
 target/

@@ -12,7 +12,7 @@ public class XsltTransformerApplication {
 
         Processor processor = new Processor(false);
         XsltCompiler compiler = processor.newXsltCompiler();
-        XsltExecutable stylesheet = compiler.compile(new StreamSource(new File("src/main/resources/stylesheet.xsl")));
+        XsltExecutable stylesheet = compiler.compile(new StreamSource(new File("stylesheet.xsl")));
         Serializer out = processor.newSerializer(new File("output-" + new Date().getTime() + ".xml"));
         Xslt30Transformer transformer = stylesheet.load30();
         transformer.transform(new StreamSource(new File("input.xml")), out);
